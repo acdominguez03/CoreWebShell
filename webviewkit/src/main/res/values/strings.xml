@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="no_connection_error">Internet connection is not available.</string>
+    <string name="connection_recovered">The Internet connection is back. Refreshing...</string>
+</resources>
