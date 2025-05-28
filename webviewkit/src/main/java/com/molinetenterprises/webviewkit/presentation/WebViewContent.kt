@@ -63,7 +63,7 @@ fun WebViewContent(
     uiEvent: (WebViewScreenViewModel.Event) -> Unit = {},
     backgroundColor: Color = Color.Red,
     url: String = "",
-    hasPullToRefresh: Boolean = true
+    enableProgressBar: Boolean = true
 ) {
     val window = LocalActivity.current?.window
     val context = LocalContext.current
@@ -213,7 +213,7 @@ fun WebViewContent(
                         bottom = if (isKeyboardVisible) 0.dp else navigationBarHeight
                     )
             ) {
-                if (state.linearProgressIndicator < 1f) {
+                if (state.linearProgressIndicator < 1f && enableProgressBar) {
                     LinearProgressIndicator(
                         progress = { state.linearProgressIndicator },
                         color = Color(0xff53BDEB),
@@ -221,57 +221,44 @@ fun WebViewContent(
                     )
                 }
 
-                if (hasPullToRefresh) {
-                    if (state.hasError) {
-                        AndroidView(
-                            factory = { context ->
-                                SwipeRefreshLayout(context).apply {
-                                    val composeView = ComposeView(context).apply {
-                                        setContent {
-                                            ErrorPage()
-                                        }
+                if (state.hasError) {
+                    AndroidView(
+                        factory = { context ->
+                            SwipeRefreshLayout(context).apply {
+                                val composeView = ComposeView(context).apply {
+                                    setContent {
+                                        ErrorPage()
                                     }
-                                    addView(composeView)
+                                }
+                                addView(composeView)
 
-                                    setOnRefreshListener {
-                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                        isRefreshing = false
-                                    }
+                                setOnRefreshListener {
+                                    uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                    isRefreshing = false
                                 }
-                            },
-                            modifier = Modifier.fillMaxSize().zIndex(9f)
-                        )
-                    } else {
-                        AndroidView(
-                            factory = { context ->
-                                SwipeRefreshLayout(context).apply {
-                                    addView(webView)
-                                    setOnRefreshListener {
-                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                    }
-                                }
-                            },
-                            update = { swipeRefreshLayout ->
-                                swipeRefreshLayout.isRefreshing = state.refreshing
-                            },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .offset(y = animatedOffsetY)
-                        )
-                    }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize().zIndex(9f)
+                    )
                 } else {
-                    if (state.hasError) {
-                        ErrorPage()
-                    } else {
-                        AndroidView(
-                            factory = { webView },
-                            update = { view -> },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .offset(y = animatedOffsetY)
-                        )
-                    }
+                    AndroidView(
+                        factory = { context ->
+                            SwipeRefreshLayout(context).apply {
+                                addView(webView)
+                                setOnRefreshListener {
+                                    uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                }
+                            }
+                        },
+                        update = { swipeRefreshLayout ->
+                            swipeRefreshLayout.isRefreshing = state.refreshing
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset(y = animatedOffsetY)
+                    )
                 }
+
             }
 
             if (!state.isWebViewLoaded && state.isFirstTime) {

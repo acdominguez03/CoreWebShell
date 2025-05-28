@@ -31,7 +31,8 @@ class MainActivity : ComponentActivity() {
                     composable("webView") {
                         WebViewScreen(
                             backgroundColor = Color(0xFFFFFFFF),
-                            url = "https://www.clipsrealm.com/"
+                            url = "https://molinete.enterprises/",
+                            enableProgressBar = false
                         )
                     }
                 }
