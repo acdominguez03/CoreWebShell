@@ -183,7 +183,16 @@ class WebViewScreenViewModel(
 
     fun onWebViewStarted(webView: WebView, url: String) {
         viewModelScope.launch {
-            webView.loadUrl(dataStoreManager.getUrl() ?: url)
+            val urlPreferences = dataStoreManager.getUrl()
+            if (urlPreferences != null) {
+                if (!urlPreferences.contains(url)) {
+                    webView.loadUrl(url)
+                } else {
+                    webView.loadUrl(urlPreferences)
+                }
+            } else {
+                webView.loadUrl(url)
+            }
         }
     }
 
