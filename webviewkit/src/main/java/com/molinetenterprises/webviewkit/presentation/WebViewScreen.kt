@@ -9,7 +9,11 @@ import org.koin.androidx.compose.koinViewModel
 fun WebViewScreen(
     backgroundColor: Color,
     url: String,
-    enableProgressBar: Boolean = true
+    enableProgressBar: Boolean = true,
+    backButtonEnabled: Boolean = false,
+    donateButtonEnabled: Boolean = false,
+    popBackStack: () -> Unit = {},
+    navigateToAnotherView: () -> Unit = {}
 ) {
     val viewModel: WebViewScreenViewModel = koinViewModel()
 
@@ -18,6 +22,10 @@ fun WebViewScreen(
         uiEvent = { viewModel.handleEvent(it) },
         backgroundColor = backgroundColor,
         url = url,
-        enableProgressBar = enableProgressBar
+        enableProgressBar = enableProgressBar,
+        backButtonEnabled = backButtonEnabled,
+        donateButtonEnabled = donateButtonEnabled,
+        popBackStack = popBackStack,
+        navigateToAnotherView = navigateToAnotherView
     )
 }

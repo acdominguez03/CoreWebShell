@@ -12,8 +12,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,7 +54,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
 import com.molinetenterprises.webviewkit.core.Utils
 import com.molinetenterprises.webviewkit.core.toDp
+import com.molinetenterprises.webviewkit.presentation.design_system.BackButton
 import com.molinetenterprises.webviewkit.presentation.design_system.ConnectionBanner
+import com.molinetenterprises.webviewkit.presentation.design_system.DonateButton
 import com.molinetenterprises.webviewkit.presentation.design_system.rememberWebViewComponent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -63,7 +67,11 @@ fun WebViewContent(
     uiEvent: (WebViewScreenViewModel.Event) -> Unit = {},
     backgroundColor: Color = Color.Red,
     url: String = "",
-    enableProgressBar: Boolean = true
+    enableProgressBar: Boolean = true,
+    backButtonEnabled: Boolean = false,
+    donateButtonEnabled: Boolean = false,
+    popBackStack: () -> Unit = {},
+    navigateToAnotherView: () -> Unit = {}
 ) {
     val window = LocalActivity.current?.window
     val context = LocalContext.current
@@ -201,78 +209,103 @@ fun WebViewContent(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = statusBarHeight,
-                        bottom = if (isKeyboardVisible) 0.dp else navigationBarHeight
-                    )
+                    .weight(1f)
             ) {
-                if (state.linearProgressIndicator < 1f && enableProgressBar) {
-                    LinearProgressIndicator(
-                        progress = { state.linearProgressIndicator },
-                        color = Color(0xff53BDEB),
-                        modifier = Modifier.fillMaxWidth().height(2.dp)
-                    )
-                }
-
-                if (state.hasError) {
-                    AndroidView(
-                        factory = { context ->
-                            SwipeRefreshLayout(context).apply {
-                                val composeView = ComposeView(context).apply {
-                                    setContent {
-                                        ErrorPage()
-                                    }
-                                }
-                                addView(composeView)
-
-                                setOnRefreshListener {
-                                    uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                    isRefreshing = false
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize().zIndex(9f)
-                    )
-                } else {
-                    AndroidView(
-                        factory = { context ->
-                            SwipeRefreshLayout(context).apply {
-                                addView(webView)
-                                setOnRefreshListener {
-                                    uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                }
-                            }
-                        },
-                        update = { swipeRefreshLayout ->
-                            swipeRefreshLayout.isRefreshing = state.refreshing
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(y = animatedOffsetY)
-                            .zIndex(9f)
-                    )
-                }
-
-            }
-
-            if (!state.isWebViewLoaded && state.isFirstTime) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(backgroundColor)
-                        .zIndex(1f),
-                    contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    if (state.linearProgressIndicator < 1f && enableProgressBar) {
+                        LinearProgressIndicator(
+                            progress = { state.linearProgressIndicator },
+                            color = Color(0xff53BDEB),
+                            modifier = Modifier.fillMaxWidth().height(2.dp)
+                        )
+                    }
+
+                    if (state.hasError) {
+                        AndroidView(
+                            factory = { context ->
+                                SwipeRefreshLayout(context).apply {
+                                    val composeView = ComposeView(context).apply {
+                                        setContent {
+                                            ErrorPage()
+                                        }
+                                    }
+                                    addView(composeView)
+
+                                    setOnRefreshListener {
+                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                        isRefreshing = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize().zIndex(9f)
+                        )
+                    } else {
+                        AndroidView(
+                            factory = { context ->
+                                SwipeRefreshLayout(context).apply {
+                                    addView(webView)
+                                    setOnRefreshListener {
+                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                    }
+                                }
+                            },
+                            update = { swipeRefreshLayout ->
+                                swipeRefreshLayout.isRefreshing = state.refreshing
+                            },
+                            modifier = Modifier
+                                .offset(y = animatedOffsetY)
+                        )
+                    }
+
+                }
+
+                if (!state.isWebViewLoaded && state.isFirstTime) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(backgroundColor)
+                            .zIndex(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
+
+            if (backButtonEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black)
+                        .padding(bottom = 20.dp)
+                        .padding(top = 5.dp),
+                    horizontalArrangement = if (donateButtonEnabled) Arrangement.SpaceBetween else Arrangement.Center
+                ) {
+                    BackButton(
+                        modifier = Modifier
+                            .padding(start = 10.dp),
+                        onClick = { popBackStack() }
+                    )
+
+                    if (donateButtonEnabled) {
+                        DonateButton(
+                            modifier = Modifier
+                                .padding(end = 10.dp),
+                            onCLick = { navigateToAnotherView() }
+                        )
+                    }
+                }
+            }
+
         }
     }
 }

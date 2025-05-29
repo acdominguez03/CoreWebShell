@@ -32,7 +32,9 @@ class MainActivity : ComponentActivity() {
                         WebViewScreen(
                             backgroundColor = Color(0xFFFFFFFF),
                             url = "https://www.burbuja.info/inmobiliaria/forums/",
-                            enableProgressBar = false
+                            enableProgressBar = true,
+                            backButtonEnabled = false,
+                            donateButtonEnabled = false
                         )
                     }
                 }
