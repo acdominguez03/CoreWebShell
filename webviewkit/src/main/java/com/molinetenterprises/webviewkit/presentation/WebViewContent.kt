@@ -70,6 +70,7 @@ fun WebViewContent(
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
+    haveBottomBar: Boolean = false,
     popBackStack: () -> Unit = {},
     navigateToAnotherView: () -> Unit = {}
 ) {
@@ -136,13 +137,6 @@ fun WebViewContent(
         )
     }
 
-    val statusBarHeight: Dp = remember(systemBarsInsets) {
-        systemBarsInsets?.top?.toDp(density) ?: 0.dp
-    }
-    val navigationBarHeight: Dp = remember(systemBarsInsets) {
-        systemBarsInsets?.bottom?.toDp(density) ?: 0.dp
-    }
-
     var keyboardHeight by remember { mutableStateOf(0.dp) }
     var inputFieldOffsetY by remember { mutableStateOf(0.dp) }
 
@@ -204,7 +198,7 @@ fun WebViewContent(
                 modifier = Modifier.zIndex(10f),
                 hostState = snackbarHostState,
                 snackbar = {
-                    ConnectionBanner(isError = !state.isConnected)
+                    ConnectionBanner(isError = !state.isConnected, haveBottomBar = haveBottomBar)
                 }
             )
         }

@@ -20,11 +20,13 @@ import com.molinetenterprises.webviewkit.theme.RecoveryBackground
 
 @Composable
 fun ConnectionBanner(
+    haveBottomBar: Boolean = false,
     isError: Boolean = false
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(bottom = if (haveBottomBar) 65.dp else 0.dp)
             .background(if (isError) ErrorBackground else RecoveryBackground)
             .padding(5.dp),
         contentAlignment = Alignment.Center

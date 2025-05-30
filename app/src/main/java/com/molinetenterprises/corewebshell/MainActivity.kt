@@ -33,7 +33,8 @@ class MainActivity : ComponentActivity() {
                             backgroundColor = Color(0xFFFFFFFF),
                             url = "https://www.burbuja.info/inmobiliaria/forums/",
                             enableProgressBar = true,
-                            backButtonEnabled = false,
+                            haveBottomBar = true,
+                            backButtonEnabled = true,
                             donateButtonEnabled = false
                         )
                     }
