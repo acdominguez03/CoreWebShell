@@ -10,7 +10,10 @@ import android.widget.FrameLayout
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,16 +27,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,15 +50,12 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
 import com.molinetenterprises.webviewkit.core.Utils
-import com.molinetenterprises.webviewkit.core.toDp
 import com.molinetenterprises.webviewkit.presentation.design_system.BackButton
 import com.molinetenterprises.webviewkit.presentation.design_system.ConnectionBanner
 import com.molinetenterprises.webviewkit.presentation.design_system.DonateButton
+import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
 import com.molinetenterprises.webviewkit.presentation.design_system.rememberWebViewComponent
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun WebViewContent(
@@ -67,10 +63,10 @@ fun WebViewContent(
     uiEvent: (WebViewScreenViewModel.Event) -> Unit = {},
     backgroundColor: Color = Color.Red,
     url: String = "",
+    haveBottomBar: Boolean = false,
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
-    haveBottomBar: Boolean = false,
     popBackStack: () -> Unit = {},
     navigateToAnotherView: () -> Unit = {}
 ) {
@@ -131,17 +127,9 @@ fun WebViewContent(
     val density = LocalDensity.current
     var isKeyboardVisible by remember { mutableStateOf(false) }
 
-    val systemBarsInsets by remember {
-        mutableStateOf(
-            ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.systemBars())
-        )
-    }
 
     var keyboardHeight by remember { mutableStateOf(0.dp) }
     var inputFieldOffsetY by remember { mutableStateOf(0.dp) }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     val animatedOffsetY: Dp by animateDpAsState(targetValue = inputFieldOffsetY)
 
@@ -178,128 +166,134 @@ fun WebViewContent(
 
     LaunchedEffect(state.isConnected) {
         uiEvent(WebViewScreenViewModel.Event.OnCheckCurrentConnectivity)
+        val wasConnected = state.previousConnectedState
+        val isNowConnected = state.isConnected
+
+        uiEvent(WebViewScreenViewModel.Event.OnLaunchedEffect(value = isNowConnected))
+
+        if (wasConnected == null) return@LaunchedEffect
+
         if (!state.isConnected) {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "no connection",
-                    duration = SnackbarDuration.Indefinite
-                )
-            }
+            uiEvent(WebViewScreenViewModel.Event.OnConnectionLost)
         } else {
-            delay(2000)
-            snackbarHostState.currentSnackbarData?.dismiss()
+            uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered)
             webView.reload()
         }
     }
 
+
     Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                modifier = Modifier.zIndex(10f),
-                hostState = snackbarHostState,
-                snackbar = {
-                    ConnectionBanner(isError = !state.isConnected, haveBottomBar = haveBottomBar)
-                }
-            )
-        }
+        modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
                 ) {
-                    if (state.linearProgressIndicator < 1f && enableProgressBar) {
-                        LinearProgressIndicator(
-                            progress = { state.linearProgressIndicator },
-                            color = Color(0xff53BDEB),
-                            modifier = Modifier.fillMaxWidth().height(2.dp)
-                        )
-                    }
-
-                    if (state.hasError) {
-                        AndroidView(
-                            factory = { context ->
-                                SwipeRefreshLayout(context).apply {
-                                    val composeView = ComposeView(context).apply {
-                                        setContent {
-                                            ErrorPage()
-                                        }
-                                    }
-                                    addView(composeView)
-
-                                    setOnRefreshListener {
-                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                        isRefreshing = false
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize().zIndex(9f)
-                        )
-                    } else {
-                        AndroidView(
-                            factory = { context ->
-                                SwipeRefreshLayout(context).apply {
-                                    addView(webView)
-                                    setOnRefreshListener {
-                                        uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                    }
-                                }
-                            },
-                            update = { swipeRefreshLayout ->
-                                swipeRefreshLayout.isRefreshing = state.refreshing
-                            },
-                            modifier = Modifier
-                                .offset(y = animatedOffsetY)
-                        )
-                    }
-
-                }
-
-                if (!state.isWebViewLoaded && state.isFirstTime) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(backgroundColor)
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        if (state.linearProgressIndicator < 1f && enableProgressBar) {
+                            LinearProgressIndicator(
+                                progress = { state.linearProgressIndicator },
+                                color = Color(0xff53BDEB),
+                                modifier = Modifier.fillMaxWidth().height(2.dp)
+                            )
+                        }
+
+                        if (state.hasError) {
+                            AndroidView(
+                                factory = { context ->
+                                    SwipeRefreshLayout(context).apply {
+                                        val composeView = ComposeView(context).apply {
+                                            setContent {
+                                                ErrorPage()
+                                            }
+                                        }
+                                        addView(composeView)
+
+                                        setOnRefreshListener {
+                                            uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                            isRefreshing = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize().zIndex(9f)
+                            )
+                        } else {
+                            AndroidView(
+                                factory = { context ->
+                                    SwipeRefreshLayout(context).apply {
+                                        addView(webView)
+                                        setOnRefreshListener {
+                                            uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
+                                        }
+                                    }
+                                },
+                                update = { swipeRefreshLayout ->
+                                    swipeRefreshLayout.isRefreshing = state.refreshing
+                                },
+                                modifier = Modifier
+                                    .offset(y = animatedOffsetY)
+                            )
+                        }
+
                     }
-                }
-            }
 
-            if (backButtonEnabled) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Black)
-                        .padding(bottom = 20.dp)
-                        .padding(top = 5.dp),
-                    horizontalArrangement = if (donateButtonEnabled) Arrangement.SpaceBetween else Arrangement.Center
-                ) {
-                    BackButton(
-                        modifier = Modifier
-                            .padding(start = 10.dp),
-                        onClick = { popBackStack() }
-                    )
-
-                    if (donateButtonEnabled) {
-                        DonateButton(
+                    if (!state.isWebViewLoaded && state.isFirstTime) {
+                        Box(
                             modifier = Modifier
-                                .padding(end = 10.dp),
-                            onCLick = { navigateToAnotherView() }
+                                .fillMaxSize()
+                                .background(backgroundColor)
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                if (backButtonEnabled) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Black)
+                            .padding(bottom = 20.dp)
+                            .padding(top = 5.dp),
+                        horizontalArrangement = if (donateButtonEnabled) Arrangement.SpaceBetween else Arrangement.Center
+                    ) {
+                        BackButton(
+                            modifier = Modifier
+                                .padding(start = 10.dp),
+                            onClick = { popBackStack() }
                         )
+
+                        if (donateButtonEnabled) {
+                            DonateButton(
+                                modifier = Modifier
+                                    .padding(end = 10.dp),
+                                onCLick = { navigateToAnotherView() }
+                            )
+                        }
                     }
                 }
             }
 
+            AnimatedVisibility(
+                visible = state.showBanner,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(1f),
+                enter = slideInVertically(initialOffsetY = { -it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
+                ConnectionBanner(isError = state.isErrorBanner, haveBottomBar = haveBottomBar)
+            }
         }
     }
 }

@@ -6,6 +6,8 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.webkit.WebView
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.molinetenterprises.webviewkit.data.DataStoreManager
@@ -27,6 +29,9 @@ class WebViewScreenViewModel(
         val hasError: Boolean = false,
         val isConnected: Boolean = true,
         val isFullScreen: Boolean = false,
+        val showBanner : Boolean = false,
+        val isErrorBanner: Boolean = false,
+        val previousConnectedState: Boolean? = null,
     )
 
     private val connectivityManager = application.getSystemService(ConnectivityManager::class.java)
@@ -64,6 +69,9 @@ class WebViewScreenViewModel(
         data class OnRefresh(val webView: WebView): Event()
         data class OnWebViewStarted(val webView: WebView, val url: String): Event()
         data object OnCheckCurrentConnectivity: Event()
+        data class OnLaunchedEffect(val value: Boolean): Event()
+        data object OnConnectionRecovered: Event()
+        data object OnConnectionLost: Event()
     }
 
     fun handleEvent(event: Event) {
@@ -77,6 +85,9 @@ class WebViewScreenViewModel(
             is Event.OnRefresh -> onRefresh(webView = event.webView)
             is Event.OnWebViewStarted -> onWebViewStarted(webView = event.webView, url = event.url)
             is Event.OnCheckCurrentConnectivity -> checkCurrentConnectivity()
+            is Event.OnLaunchedEffect -> onLaunchedEffect(value = event.value)
+            is Event.OnConnectionLost -> onConnectionLost()
+            is Event.OnConnectionRecovered -> onConnectionRecovered()
         }
     }
 
@@ -179,6 +190,44 @@ class WebViewScreenViewModel(
             )
             webView.reload()
         }
+    }
+
+    fun onConnectionLost() {
+        viewModelScope.launch {
+            _webViewState.tryEmit(
+                _webViewState.value.copy(
+                    isErrorBanner = true,
+                    showBanner = true
+                )
+            )
+        }
+    }
+
+    fun onConnectionRecovered() {
+        viewModelScope.launch {
+            _webViewState.tryEmit(
+                _webViewState.value.copy(
+                    isErrorBanner = false,
+                    showBanner = true
+                )
+            )
+
+            delay(2000)
+
+            _webViewState.tryEmit(
+                _webViewState.value.copy(
+                    showBanner = false
+                )
+            )
+        }
+    }
+
+    fun onLaunchedEffect(value: Boolean) {
+        _webViewState.tryEmit(
+            _webViewState.value.copy(
+               previousConnectedState = value
+            )
+        )
     }
 
     fun onWebViewStarted(webView: WebView, url: String) {
