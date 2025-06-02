@@ -23,11 +23,9 @@ class MainActivity : ComponentActivity() {
                     composable("webView") {
                         WebViewScreen(
                             backgroundColor = Color(0xFFFFFFFF),
-                            url = "https://www.burbuja.info/inmobiliaria/forums/",
+                            url = "https://foro.global/",
                             haveBottomBar = true,
                             enableProgressBar = true,
-                            backButtonEnabled = true,
-                            donateButtonEnabled = false
                         )
                     }
                 }

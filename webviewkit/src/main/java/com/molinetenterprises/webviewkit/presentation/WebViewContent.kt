@@ -128,7 +128,6 @@ fun WebViewContent(
     val density = LocalDensity.current
     var isKeyboardVisible by remember { mutableStateOf(false) }
 
-
     var keyboardHeight by remember { mutableStateOf(0.dp) }
     var inputFieldOffsetY by remember { mutableStateOf(0.dp) }
 
@@ -177,8 +176,10 @@ fun WebViewContent(
         if (!state.isConnected) {
             uiEvent(WebViewScreenViewModel.Event.OnConnectionLost)
         } else {
-            uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered)
-            webView.reload()
+            if (!wasConnected) {
+                uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered)
+                webView.reload()
+            }
         }
     }
 
@@ -265,13 +266,12 @@ fun WebViewContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.Black)
-                            .padding(bottom = 20.dp)
-                            .padding(top = 5.dp),
+                            .padding(5.dp),
                         horizontalArrangement = if (donateButtonEnabled) Arrangement.SpaceBetween else Arrangement.Center
                     ) {
                         BackButton(
                             modifier = Modifier
-                                .padding(start = 10.dp),
+                                .padding(start = if (donateButtonEnabled) 10.dp else 0.dp),
                             onClick = { popBackStack() }
                         )
 
@@ -295,7 +295,7 @@ fun WebViewContent(
             enter = fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it })
         ) {
-            ConnectionBanner(isError = state.isErrorBanner, haveBottomBar = haveBottomBar)
+            ConnectionBanner(modifier = Modifier.offset(y = if (backButtonEnabled) (-50).dp else 0.dp), isError = state.isErrorBanner)
         }
     }
 }
