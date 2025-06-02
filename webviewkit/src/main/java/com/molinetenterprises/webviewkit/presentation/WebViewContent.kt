@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -182,12 +183,13 @@ fun WebViewContent(
     }
 
 
-    Scaffold(
+    Box(
         modifier = Modifier.fillMaxSize()
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+    ) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .padding(paddingValues)
             ) {
                 Box(
@@ -283,17 +285,17 @@ fun WebViewContent(
                     }
                 }
             }
+        }
 
-            AnimatedVisibility(
-                visible = state.showBanner,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .zIndex(1f),
-                enter = slideInVertically(initialOffsetY = { -it }),
-                exit = slideOutVertically(targetOffsetY = { it })
-            ) {
-                ConnectionBanner(isError = state.isErrorBanner, haveBottomBar = haveBottomBar)
-            }
+        AnimatedVisibility(
+            visible = state.showBanner,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .zIndex(1f),
+            enter = fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it })
+        ) {
+            ConnectionBanner(isError = state.isErrorBanner, haveBottomBar = haveBottomBar)
         }
     }
 }
