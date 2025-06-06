@@ -23,8 +23,7 @@ class MainActivity : ComponentActivity() {
                     composable("webView") {
                         WebViewScreen(
                             backgroundColor = Color(0xFFFFFFFF),
-                            url = "https://foro.global/",
-                            haveBottomBar = true,
+                            url = "https://molinete.enterprises/en/home/",
                             enableProgressBar = true,
                         )
                     }

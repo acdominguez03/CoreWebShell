@@ -9,7 +9,6 @@ import org.koin.androidx.compose.koinViewModel
 fun WebViewScreen(
     backgroundColor: Color,
     url: String,
-    haveBottomBar: Boolean = false,
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
@@ -23,7 +22,6 @@ fun WebViewScreen(
         uiEvent = { viewModel.handleEvent(it) },
         backgroundColor = backgroundColor,
         url = url,
-        haveBottomBar = haveBottomBar,
         enableProgressBar = enableProgressBar,
         backButtonEnabled = backButtonEnabled,
         donateButtonEnabled = donateButtonEnabled,

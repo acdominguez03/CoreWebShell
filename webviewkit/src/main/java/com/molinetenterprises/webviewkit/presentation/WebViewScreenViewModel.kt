@@ -49,6 +49,8 @@ class WebViewScreenViewModel(
     private val _webViewState = MutableStateFlow(WebViewState())
     val webViewState: StateFlow<WebViewState> = _webViewState
 
+    private var pageHadError: Boolean = false
+
     init {
         val request = NetworkRequest.Builder().build()
         connectivityManager.registerNetworkCallback(request, networkCallback)
@@ -70,7 +72,7 @@ class WebViewScreenViewModel(
         data class OnWebViewStarted(val webView: WebView, val url: String): Event()
         data object OnCheckCurrentConnectivity: Event()
         data class OnLaunchedEffect(val value: Boolean): Event()
-        data object OnConnectionRecovered: Event()
+        data class OnConnectionRecovered(val webView: WebView): Event()
         data object OnConnectionLost: Event()
     }
 
@@ -87,18 +89,12 @@ class WebViewScreenViewModel(
             is Event.OnCheckCurrentConnectivity -> checkCurrentConnectivity()
             is Event.OnLaunchedEffect -> onLaunchedEffect(value = event.value)
             is Event.OnConnectionLost -> onConnectionLost()
-            is Event.OnConnectionRecovered -> onConnectionRecovered()
+            is Event.OnConnectionRecovered -> onConnectionRecovered(webView = event.webView)
         }
     }
 
     fun onErrorReceived() {
-        viewModelScope.launch {
-            _webViewState.tryEmit(
-                _webViewState.value.copy(
-                    hasError = true
-                )
-            )
-        }
+        pageHadError = true
     }
 
     fun onProgressChanged(progress: Int) {
@@ -131,9 +127,11 @@ class WebViewScreenViewModel(
             _webViewState.tryEmit(
                 _webViewState.value.copy(
                     isWebViewLoaded = true,
-                    isFirstTime = false
+                    isFirstTime = false,
+                    hasError = pageHadError
                 )
             )
+            pageHadError = false
             requestPermissions()
         }
     }
@@ -203,7 +201,7 @@ class WebViewScreenViewModel(
         }
     }
 
-    fun onConnectionRecovered() {
+    fun onConnectionRecovered(webView: WebView) {
         viewModelScope.launch {
             _webViewState.tryEmit(
                 _webViewState.value.copy(

@@ -5,6 +5,7 @@ import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.ValueCallback
 import android.widget.FrameLayout
 import androidx.activity.compose.LocalActivity
@@ -64,7 +65,6 @@ fun WebViewContent(
     uiEvent: (WebViewScreenViewModel.Event) -> Unit = {},
     backgroundColor: Color = Color.Red,
     url: String = "",
-    haveBottomBar: Boolean = false,
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
@@ -94,6 +94,8 @@ fun WebViewContent(
         )
     }
 
+    var launchPermissions by remember { mutableStateOf(false) }
+
     val permissionsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions -> })
@@ -114,11 +116,7 @@ fun WebViewContent(
         onFullScreenContainerChanged = { fullScreenContainer = it },
         onPageFinished = { url ->
             uiEvent(WebViewScreenViewModel.Event.OnPageFinished(url = url, requestPermissions = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    permissionsLauncher.launch(permissions)
-                } else {
-                    permissionsLauncher.launch(permissions)
-                }
+                launchPermissions = true
             }))
         },
         uiEvent = uiEvent
@@ -177,9 +175,16 @@ fun WebViewContent(
             uiEvent(WebViewScreenViewModel.Event.OnConnectionLost)
         } else {
             if (!wasConnected) {
-                uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered)
+                uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered(webView = webView))
                 webView.reload()
             }
+        }
+    }
+
+    LaunchedEffect(launchPermissions) {
+        if (launchPermissions) {
+            permissionsLauncher.launch(permissions)
+            launchPermissions = false
         }
     }
 
@@ -210,6 +215,8 @@ fun WebViewContent(
                         }
 
                         if (state.hasError) {
+                            webView.visibility = View.INVISIBLE
+
                             AndroidView(
                                 factory = { context ->
                                     SwipeRefreshLayout(context).apply {
@@ -232,6 +239,10 @@ fun WebViewContent(
                             AndroidView(
                                 factory = { context ->
                                     SwipeRefreshLayout(context).apply {
+                                        if (webView.parent != null) {
+                                            (webView.parent as? ViewGroup)?.removeView(webView)
+                                        }
+                                        webView.visibility = View.VISIBLE
                                         addView(webView)
                                         setOnRefreshListener {
                                             uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
