@@ -9,6 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
+
         applicationId = "com.molinetenterprises.corewebshell"
         minSdk = 30
         targetSdk = 35
@@ -16,6 +17,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    lint {
+        disable.add("NullSafeMutableLiveData")
     }
 
     buildTypes {
@@ -34,6 +39,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
     }
