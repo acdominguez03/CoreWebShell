@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -162,7 +163,10 @@ fun WebViewContent(
         uiEvent(WebViewScreenViewModel.Event.OnWebViewStarted(webView = webView, url = url))
     }
 
-    LaunchedEffect(state.isConnected) {
+    val configuration = LocalConfiguration.current
+    val orientation = configuration.orientation
+
+    LaunchedEffect(state.isConnected, orientation) {
         uiEvent(WebViewScreenViewModel.Event.OnCheckCurrentConnectivity)
         val wasConnected = state.previousConnectedState
         val isNowConnected = state.isConnected
