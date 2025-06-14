@@ -2,9 +2,12 @@ package com.molinetenterprises.webviewkit.presentation.design_system
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +30,7 @@ fun ConnectionBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .background(if (isError) ErrorBackground else RecoveryBackground)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
