@@ -311,7 +311,6 @@ fun WebViewContent(
                 .align(Alignment.BottomCenter)
                 .zIndex(1f),
             enter = fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it })
         ) {
             ConnectionBanner(modifier = Modifier.offset(y = if (backButtonEnabled) (-50).dp else 0.dp), isError = state.isErrorBanner)
         }
