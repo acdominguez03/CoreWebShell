@@ -166,7 +166,7 @@ fun rememberWebViewComponent(
                         isFullScreen = false
                     }
 
-                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
                     WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                         show(WindowInsetsCompat.Type.systemBars())
