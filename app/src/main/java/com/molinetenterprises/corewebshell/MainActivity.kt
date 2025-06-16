@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
                     composable("webView") {
                         WebViewScreen(
                             backgroundColor = Color(0xFFFFFFFF),
-                            url = "https://player.twitch.tv/?channel=oliviermolinete&parent=localhost",
+                            url = "https://foro.global/",
                             enableProgressBar = true,
                         )
                     }

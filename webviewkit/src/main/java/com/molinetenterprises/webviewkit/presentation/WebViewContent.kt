@@ -104,9 +104,6 @@ fun WebViewContent(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions -> })
 
-    var customView by remember { mutableStateOf<View?>(null) }
-    var fullScreenContainer by remember { mutableStateOf<FrameLayout?>(null) }
-
     val webView = rememberWebViewComponent(
         context = context,
         activity = activity,
@@ -114,10 +111,6 @@ fun WebViewContent(
         fileChooserLauncher = fileChooserLauncher,
         filePathCallback = filePathCallback,
         onFilePathCallbackChanged = { filePathCallback = it },
-        customView = customView,
-        onCustomViewChanged = { customView = it },
-        fullScreenContainer = fullScreenContainer,
-        onFullScreenContainerChanged = { fullScreenContainer = it },
         onPageFinished = { url ->
             uiEvent(WebViewScreenViewModel.Event.OnPageFinished(url = url, requestPermissions = {
                 launchPermissions = true

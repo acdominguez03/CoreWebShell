@@ -22,7 +22,9 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.CoreWebShell">
+            android:theme="@style/Theme.CoreWebShell"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="fullUser">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -15,18 +15,23 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.molinetenterprises.webviewkit.presentation.WebViewScreenViewModel
+
 
 @Composable
 fun rememberWebViewComponent(
@@ -36,13 +41,13 @@ fun rememberWebViewComponent(
     fileChooserLauncher: ManagedActivityResultLauncher<String, Uri?>,
     filePathCallback: ValueCallback<Array<Uri>>?,
     onFilePathCallbackChanged: (ValueCallback<Array<Uri>>?) -> Unit,
-    customView: View?,
-    onCustomViewChanged: (View?) -> Unit,
-    fullScreenContainer: FrameLayout?,
-    onFullScreenContainerChanged: (FrameLayout?) -> Unit,
     onPageFinished: (String) -> Unit = {},
     uiEvent: (WebViewScreenViewModel.Event) -> Unit
 ): WebView {
+    var customView by remember { mutableStateOf<View?>(null) }
+    var fullScreenContainer by remember { mutableStateOf<FrameLayout?>(null) }
+    var isFullScreen by remember { mutableStateOf(false) }
+
     return remember {
         WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -50,13 +55,17 @@ fun rememberWebViewComponent(
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(Color.White.toArgb())
+
+            settings.domStorageEnabled = true
+            settings.cacheMode = WebSettings.LOAD_DEFAULT
             settings.javaScriptEnabled = true
             settings.setGeolocationEnabled(true)
             settings.allowFileAccess = true
             settings.allowContentAccess = true
             settings.mediaPlaybackRequiresUserGesture = false
 
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            val cookieManager = CookieManager.getInstance()
+            cookieManager.setAcceptCookie(true)
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -128,22 +137,22 @@ fun rememberWebViewComponent(
                         onHideCustomView()
                         return
                     }
-                    onCustomViewChanged(view)
 
-                    onFullScreenContainerChanged(FrameLayout(context).apply {
+                    customView = view
+                    isFullScreen = true
+
+                    fullScreenContainer = FrameLayout(context).apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
                         addView(view)
-                    })
+                    }
 
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-
                     WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                         hide(WindowInsetsCompat.Type.systemBars())
-                        systemBarsBehavior =
-                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                     }
 
                     (activity.window.decorView as ViewGroup).addView(fullScreenContainer)
@@ -152,16 +161,16 @@ fun rememberWebViewComponent(
                 override fun onHideCustomView() {
                     customView?.let {
                         (activity.window.decorView as ViewGroup).removeView(fullScreenContainer)
-                        onCustomViewChanged(null)
-                        onFullScreenContainerChanged(null)
-                        uiEvent(WebViewScreenViewModel.Event.OnHideCustomView)
+                        customView = null
+                        fullScreenContainer = null
+                        isFullScreen = false
                     }
+
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
 
                     WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
                         show(WindowInsetsCompat.Type.systemBars())
-                        systemBarsBehavior =
-                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                     }
                 }
             }
