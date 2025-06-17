@@ -64,6 +64,7 @@ fun rememberWebViewComponent(
             settings.allowContentAccess = true
             settings.mediaPlaybackRequiresUserGesture = false
 
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
 
@@ -93,6 +94,7 @@ fun rememberWebViewComponent(
                     Log.d("WebView", "onPageFinished:")
                     view?.url?.let {
                         Log.d("WebView", "onPageFinished: $it")
+                        CookieManager.getInstance().flush() 
                         onPageFinished(it)
                     }
                 }
