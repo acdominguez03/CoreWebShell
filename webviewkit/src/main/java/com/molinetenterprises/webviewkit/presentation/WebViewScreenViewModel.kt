@@ -143,13 +143,13 @@ class WebViewScreenViewModel(
                     linearProgressIndicator = 0.8f
                 )
             )
-            delay(100)
+            delay(1000)
             _webViewState.emit(
                 _webViewState.value.copy(
                     linearProgressIndicator = 0.99f
                 )
             )
-            delay(100)
+            delay(1000)
             _webViewState.emit(
                 _webViewState.value.copy(
                     linearProgressIndicator = 1f,
