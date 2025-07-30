@@ -62,6 +62,7 @@ import com.molinetenterprises.webviewkit.presentation.design_system.BackButton
 import com.molinetenterprises.webviewkit.presentation.design_system.ConnectionBanner
 import com.molinetenterprises.webviewkit.presentation.design_system.DonateButton
 import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
+import com.molinetenterprises.webviewkit.presentation.design_system.FlatLinearProgressIndicator
 import com.molinetenterprises.webviewkit.presentation.design_system.rememberWebViewComponent
 
 @Composable
@@ -208,12 +209,7 @@ fun WebViewContent(
                             .fillMaxSize()
                     ) {
                         if (state.linearProgressIndicator < 1f && enableProgressBar) {
-                            LinearProgressIndicator(
-                                progress = { state.linearProgressIndicator },
-                                color = Color(0xff53BDEB),
-                                trackColor = Color.Transparent,
-                                modifier = Modifier.fillMaxWidth().height(2.dp)
-                            )
+                            FlatLinearProgressIndicator(progress = state.linearProgressIndicator)
                         }
 
                         if (state.hasError) {
