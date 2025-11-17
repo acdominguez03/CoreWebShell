@@ -50,6 +50,7 @@ fun rememberWebViewComponent(
 
     return remember {
         WebView(context).apply {
+            loadUrl(baseUrl)
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT

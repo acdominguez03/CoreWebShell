@@ -1,21 +1,24 @@
 package com.molinetenterprises.webviewkit.presentation
 
 import android.Manifest
+import android.R.attr.rotationY
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.ValueCallback
-import android.widget.FrameLayout
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,25 +27,31 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ExperimentalGraphicsApi
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -265,7 +274,7 @@ fun WebViewContent(
                                 .zIndex(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            GradientProgress()
                         }
                     }
                 }
@@ -306,6 +315,44 @@ fun WebViewContent(
             ConnectionBanner(modifier = Modifier.offset(y = if (backButtonEnabled) (-50).dp else 0.dp), isError = state.isErrorBanner)
         }
     }
+}
+
+@Composable
+fun GradientProgress(
+    modifier: Modifier = Modifier,
+    diameter: Dp = 100.dp,
+    width: Float = 10f,
+    colors: List<Color> = listOf(Color.Cyan, Color.Blue),
+    progress: Float = .75f
+) {
+    Box(
+        content = {
+            Canvas(
+                modifier = modifier
+                    .size(diameter)
+                    .rotate(-90f)
+                    .graphicsLayer {
+                        rotationY = 360f
+                    },
+                onDraw = {
+                    drawArc(
+                        color = Color.LightGray,
+                        startAngle = 0f,
+                        sweepAngle = 360f,
+                        false,
+                        style = Stroke(width = width)
+                    )
+                    drawArc(
+                        brush = Brush.sweepGradient(colors = colors),
+                        startAngle = 0f,
+                        sweepAngle = progress * 360f,
+                        false,
+                        style = Stroke(width = width)
+                    )
+                }
+            )
+        }
+    )
 }
 
 @Preview(showBackground = true)
