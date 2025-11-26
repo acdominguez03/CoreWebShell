@@ -167,7 +167,9 @@ fun WebViewContent(
         if (window != null) {
             Utils.showSystemUI(window)
         }
-        uiEvent(WebViewScreenViewModel.Event.OnWebViewStarted(webView = webView, url = url))
+        uiEvent(WebViewScreenViewModel.Event.GetInitialUrl(defaultUrl = url, callback = { safeUrl ->
+            webView.loadUrl(safeUrl)
+        }))
     }
 
     val configuration = LocalConfiguration.current
@@ -217,7 +219,7 @@ fun WebViewContent(
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
-                        if (state.linearProgressIndicator < 1f && enableProgressBar) {
+                        if ((state.linearProgressIndicator < 1f && enableProgressBar) || (!state.isWebViewLoaded && state.isFirstTime)) {
                             FlatLinearProgressIndicator(progress = state.linearProgressIndicator)
                         }
 
@@ -265,18 +267,6 @@ fun WebViewContent(
                         }
 
                     }
-
-                    if (!state.isWebViewLoaded && state.isFirstTime) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(backgroundColor)
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            GradientProgress()
-                        }
-                    }
                 }
 
                 if (backButtonEnabled) {
@@ -315,44 +305,6 @@ fun WebViewContent(
             ConnectionBanner(modifier = Modifier.offset(y = if (backButtonEnabled) (-50).dp else 0.dp), isError = state.isErrorBanner)
         }
     }
-}
-
-@Composable
-fun GradientProgress(
-    modifier: Modifier = Modifier,
-    diameter: Dp = 100.dp,
-    width: Float = 10f,
-    colors: List<Color> = listOf(Color.Cyan, Color.Blue),
-    progress: Float = .75f
-) {
-    Box(
-        content = {
-            Canvas(
-                modifier = modifier
-                    .size(diameter)
-                    .rotate(-90f)
-                    .graphicsLayer {
-                        rotationY = 360f
-                    },
-                onDraw = {
-                    drawArc(
-                        color = Color.LightGray,
-                        startAngle = 0f,
-                        sweepAngle = 360f,
-                        false,
-                        style = Stroke(width = width)
-                    )
-                    drawArc(
-                        brush = Brush.sweepGradient(colors = colors),
-                        startAngle = 0f,
-                        sweepAngle = progress * 360f,
-                        false,
-                        style = Stroke(width = width)
-                    )
-                }
-            )
-        }
-    )
 }
 
 @Preview(showBackground = true)

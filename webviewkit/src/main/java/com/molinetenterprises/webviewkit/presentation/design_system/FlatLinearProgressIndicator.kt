@@ -29,6 +29,7 @@ fun FlatLinearProgressIndicator(
         }
     }
 ) {
+
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = tween(durationMillis = 400),

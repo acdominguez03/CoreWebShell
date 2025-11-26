@@ -50,7 +50,6 @@ fun rememberWebViewComponent(
 
     return remember {
         WebView(context).apply {
-            loadUrl(baseUrl)
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -101,20 +100,31 @@ fun rememberWebViewComponent(
                 }
 
                 override fun onReceivedError(
-                    view: WebView?, request: WebResourceRequest?, error: WebResourceError?
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    error: WebResourceError?
                 ) {
                     super.onReceivedError(view, request, error)
+
                     if (request?.isForMainFrame == true) {
+                        Log.e("WebView", "Main frame error: ${error?.description}")
                         uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
                     }
                 }
 
                 override fun onReceivedHttpError(
-                    view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?
+                    view: WebView?,
+                    request: WebResourceRequest?,
+                    errorResponse: WebResourceResponse?
                 ) {
                     super.onReceivedHttpError(view, request, errorResponse)
+
                     if (request?.isForMainFrame == true) {
-                        uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
+                        val statusCode = errorResponse?.statusCode ?: 0
+                        if (statusCode >= 400) {
+                            Log.e("WebView", "HTTP error $statusCode for main frame")
+                            uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
+                        }
                     }
                 }
             }

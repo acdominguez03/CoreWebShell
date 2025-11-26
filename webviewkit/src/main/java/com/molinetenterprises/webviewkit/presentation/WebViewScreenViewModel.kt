@@ -5,9 +5,8 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import android.webkit.WebView
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.molinetenterprises.webviewkit.data.DataStoreManager
@@ -49,7 +48,9 @@ class WebViewScreenViewModel(
     private val _webViewState = MutableStateFlow(WebViewState())
     val webViewState: StateFlow<WebViewState> = _webViewState
 
-    private var pageHadError: Boolean = false
+    // MEJORA 1: Rastrear errores solo del frame principal
+    private var mainFrameHadError: Boolean = false
+    private var currentLoadingUrl: String? = null
 
     init {
         val request = NetworkRequest.Builder().build()
@@ -69,7 +70,7 @@ class WebViewScreenViewModel(
         data object OnShowCustomView: Event()
         data object OnHideCustomView: Event()
         data class OnRefresh(val webView: WebView): Event()
-        data class OnWebViewStarted(val webView: WebView, val url: String): Event()
+        data class GetInitialUrl(val defaultUrl: String, val callback: (String) -> Unit): Event()
         data object OnCheckCurrentConnectivity: Event()
         data class OnLaunchedEffect(val value: Boolean): Event()
         data class OnConnectionRecovered(val webView: WebView): Event()
@@ -85,7 +86,7 @@ class WebViewScreenViewModel(
             is Event.OnShowCustomView -> onShowCustomView()
             is Event.OnHideCustomView -> onHideCustomView()
             is Event.OnRefresh -> onRefresh(webView = event.webView)
-            is Event.OnWebViewStarted -> onWebViewStarted(webView = event.webView, url = event.url)
+            is Event.GetInitialUrl -> getInitialUrl(defaultUrl = event.defaultUrl, callback = event.callback)
             is Event.OnCheckCurrentConnectivity -> checkCurrentConnectivity()
             is Event.OnLaunchedEffect -> onLaunchedEffect(value = event.value)
             is Event.OnConnectionLost -> onConnectionLost()
@@ -94,7 +95,9 @@ class WebViewScreenViewModel(
     }
 
     fun onErrorReceived() {
-        pageHadError = true
+        // MEJORA 2: Solo marcar error si es del frame principal
+        mainFrameHadError = true
+        Log.e("WebViewViewModel", "Main frame error detected for URL: $currentLoadingUrl")
     }
 
     fun onProgressChanged(progress: Int) {
@@ -113,9 +116,12 @@ class WebViewScreenViewModel(
 
     fun onPageStarted() {
         viewModelScope.launch {
+            mainFrameHadError = false
+
             _webViewState.tryEmit(
                 _webViewState.value.copy(
-                    isWebViewLoaded = false
+                    isWebViewLoaded = false,
+                    hasError = false
                 )
             )
         }
@@ -123,16 +129,25 @@ class WebViewScreenViewModel(
 
     fun onPageFinished(url: String, requestPermissions: () -> Unit) {
         viewModelScope.launch {
-            dataStoreManager.saveUrl(url = url)
+            currentLoadingUrl = url
+
+            // Guardar URL solo si es válida y no hubo error
+            if (url.isNotBlank() && url.startsWith("http") && !mainFrameHadError) {
+                dataStoreManager.saveUrl(url)
+            }
+
             _webViewState.tryEmit(
                 _webViewState.value.copy(
                     isWebViewLoaded = true,
                     isFirstTime = false,
-                    hasError = pageHadError
+                    hasError = mainFrameHadError
                 )
             )
-            pageHadError = false
-            requestPermissions()
+
+            // Solo reiniciar después de actualizar el estado
+            if (!mainFrameHadError) {
+                requestPermissions()
+            }
         }
     }
 
@@ -181,9 +196,13 @@ class WebViewScreenViewModel(
 
     fun onRefresh(webView: WebView) {
         viewModelScope.launch {
+            // Limpiar estado de error antes de recargar
+            mainFrameHadError = false
+
             _webViewState.tryEmit(
                 _webViewState.value.copy(
-                    refreshing = true
+                    refreshing = true,
+                    hasError = false
                 )
             )
             webView.reload()
@@ -223,23 +242,24 @@ class WebViewScreenViewModel(
     fun onLaunchedEffect(value: Boolean) {
         _webViewState.tryEmit(
             _webViewState.value.copy(
-               previousConnectedState = value
+                previousConnectedState = value
             )
         )
     }
 
-    fun onWebViewStarted(webView: WebView, url: String) {
+    fun getInitialUrl(defaultUrl: String, callback: (String) -> Unit) {
         viewModelScope.launch {
-            val urlPreferences = dataStoreManager.getUrl()
-            if (urlPreferences != null) {
-                if (!urlPreferences.contains(url)) {
-                    webView.loadUrl(url)
-                } else {
-                    webView.loadUrl(urlPreferences)
-                }
-            } else {
-                webView.loadUrl(url)
+            val stored = dataStoreManager.getUrl()
+
+            val finalUrl = when {
+                stored.isNullOrBlank() -> defaultUrl
+                stored == "about:blank" -> defaultUrl
+                !stored.startsWith("http") -> defaultUrl
+                else -> stored
             }
+
+            Log.d("WebViewViewModel", "Loading initial URL: $finalUrl")
+            callback(finalUrl)
         }
     }
 
