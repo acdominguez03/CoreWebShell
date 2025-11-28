@@ -12,6 +12,7 @@ fun WebViewScreen(
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
+    progressIndicatorColor: Color = Color.White,
     popBackStack: () -> Unit = {},
     navigateToAnotherView: () -> Unit = {}
 ) {
@@ -26,6 +27,7 @@ fun WebViewScreen(
         backButtonEnabled = backButtonEnabled,
         donateButtonEnabled = donateButtonEnabled,
         popBackStack = popBackStack,
-        navigateToAnotherView = navigateToAnotherView
+        navigateToAnotherView = navigateToAnotherView,
+        progressIndicatorColor = progressIndicatorColor
     )
 }

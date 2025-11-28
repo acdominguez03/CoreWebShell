@@ -22,9 +22,10 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "webView") {
                     composable("webView") {
                         WebViewScreen(
-                            backgroundColor = Color(0xFFFFFFFF),
+                            backgroundColor = Color(0xFF2B2C31),
                             url = "https://foro.global/",
                             enableProgressBar = true,
+                            progressIndicatorColor = Color.White
                         )
                     }
                 }

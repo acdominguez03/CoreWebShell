@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -79,6 +80,7 @@ fun WebViewContent(
     state: WebViewScreenViewModel.WebViewState = WebViewScreenViewModel.WebViewState(),
     uiEvent: (WebViewScreenViewModel.Event) -> Unit = {},
     backgroundColor: Color = Color.Red,
+    progressIndicatorColor: Color = Color.White,
     url: String = "",
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
@@ -201,6 +203,11 @@ fun WebViewContent(
         }
     }
 
+    LaunchedEffect(webView) {
+        webView.setBackgroundColor(backgroundColor.toArgb())
+        webView.setBackgroundResource(0)
+        webView.setLayerType(View.LAYER_TYPE_NONE, null)
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -209,7 +216,9 @@ fun WebViewContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.systemBars)
+                    .windowInsetsPadding(WindowInsets.systemBars) ,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
@@ -219,7 +228,7 @@ fun WebViewContent(
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
-                        if ((state.linearProgressIndicator < 1f && enableProgressBar) || (!state.isWebViewLoaded && state.isFirstTime)) {
+                        if (state.linearProgressIndicator < 1f && enableProgressBar) {
                             FlatLinearProgressIndicator(progress = state.linearProgressIndicator)
                         }
 
@@ -263,9 +272,9 @@ fun WebViewContent(
                                 },
                                 modifier = Modifier
                                     .offset(y = animatedOffsetY)
+                                    .background(backgroundColor)
                             )
                         }
-
                     }
                 }
 
@@ -293,6 +302,13 @@ fun WebViewContent(
                     }
                 }
             }
+        }
+
+        if (!state.isWebViewLoaded && state.isFirstTime) {
+            CircularProgressIndicator(
+                color = progressIndicatorColor,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
 
         AnimatedVisibility(
