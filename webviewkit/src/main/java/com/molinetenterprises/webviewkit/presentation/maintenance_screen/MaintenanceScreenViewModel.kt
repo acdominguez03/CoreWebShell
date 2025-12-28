@@ -42,7 +42,7 @@ class MaintenanceScreenViewModel(
         job = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 checkMaintenance()
-                delay(30_000)
+                delay(10_000)
             }
         }
     }
@@ -81,7 +81,7 @@ class MaintenanceScreenViewModel(
         } catch (exception: Exception) {
             _maintenanceState.tryEmit(
                 _maintenanceState.value.copy(
-                    error = exception.message,
+                    error = "Error al obtener los datos de mantenimiento: ${exception.message}",
                     webViewMode = WebViewMode.ERROR
                 )
             )

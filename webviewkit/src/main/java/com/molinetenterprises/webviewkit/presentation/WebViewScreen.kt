@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
 import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
+import com.molinetenterprises.webviewkit.presentation.error_screen.ErrorScreen
 import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreen
 import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreenViewModel
 import com.molinetenterprises.webviewkit.presentation.maintenance_screen.WebViewMode
@@ -53,7 +54,9 @@ fun WebViewScreen(
             )
         }
         WebViewMode.ERROR -> {
-            ErrorPage()
+            ErrorScreen(
+                message = maintenanceState.error ?: "Unknown error"
+            )
         }
     }
 
