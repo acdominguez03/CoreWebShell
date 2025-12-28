@@ -58,7 +58,6 @@ fun rememberWebViewComponent(
 
             settings.domStorageEnabled = true
             settings.cacheMode = WebSettings.LOAD_DEFAULT
-            settings.javaScriptEnabled = true
             settings.setGeolocationEnabled(true)
             settings.allowFileAccess = true
             settings.allowContentAccess = true
@@ -119,12 +118,11 @@ fun rememberWebViewComponent(
                 ) {
                     super.onReceivedHttpError(view, request, errorResponse)
 
-                    if (request?.isForMainFrame == true) {
-                        val statusCode = errorResponse?.statusCode ?: 0
-                        if (statusCode >= 400) {
-                            Log.e("WebView", "HTTP error $statusCode for main frame")
-                            uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
-                        }
+                    val statusCode = errorResponse?.statusCode ?: return
+
+                    if (statusCode == 403 || statusCode == 404) {
+                        Log.e("WebView", "HTTP $statusCode en frame principal")
+                        uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
                     }
                 }
             }

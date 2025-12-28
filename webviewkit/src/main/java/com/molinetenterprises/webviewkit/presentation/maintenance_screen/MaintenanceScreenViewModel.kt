@@ -3,6 +3,7 @@ package com.molinetenterprises.webviewkit.presentation.maintenance_screen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +79,13 @@ class MaintenanceScreenViewModel(
                     )
                 )
             }
+        } catch (_: HttpRequestTimeoutException) {
+            _maintenanceState.tryEmit(
+                _maintenanceState.value.copy(
+                    error = "La conexión está tardando demasiado. Revisa tu red.",
+                    webViewMode = WebViewMode.ERROR
+                )
+            )
         } catch (exception: Exception) {
             _maintenanceState.tryEmit(
                 _maintenanceState.value.copy(

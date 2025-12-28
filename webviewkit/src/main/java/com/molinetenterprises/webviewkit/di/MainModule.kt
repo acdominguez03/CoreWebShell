@@ -7,6 +7,7 @@ import com.molinetenterprises.webviewkit.presentation.WebViewScreenViewModel
 import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreenViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -30,6 +31,12 @@ fun providerKtorClient(): HttpClient =
     HttpClient(CIO) {
         expectSuccess = false
         engine {
-            requestTimeout = 5000
+            requestTimeout = 15_000 // total
+        }
+
+        install(HttpTimeout) {
+            connectTimeoutMillis = 10_000
+            requestTimeoutMillis = 15_000
+            socketTimeoutMillis = 15_000
         }
     }
