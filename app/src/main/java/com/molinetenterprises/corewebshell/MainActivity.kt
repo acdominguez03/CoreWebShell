@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
                         WebViewScreen(
                             backgroundColor = Color(0xFF2B2C31),
                             url = "https://foro.global/",
+                            maintenanceUrl = "https://foro.global/maintenance_window",
                             enableProgressBar = true,
                             progressIndicatorColor = Color.White
                         )

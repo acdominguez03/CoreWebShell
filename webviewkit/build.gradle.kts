@@ -68,4 +68,8 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.androidx.navigation)
+
+    implementation(libs.ktor.client)
+    implementation(libs.ktor.client.content)
+    implementation(libs.ktor.client.cio)
 }

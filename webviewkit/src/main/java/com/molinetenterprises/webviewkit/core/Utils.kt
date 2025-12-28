@@ -3,6 +3,9 @@ package com.molinetenterprises.webviewkit.core
 import android.view.Window
 import android.view.WindowInsets
 import android.view.WindowInsetsController
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 object Utils {
     fun hideSystemUI(window: Window) {
@@ -17,5 +20,13 @@ object Utils {
             controller.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
             controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+    }
+
+    fun epochToCET(epoch: Long): String {
+        val zone = ZoneId.of("CET")
+        val formatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val dt = Instant.ofEpochSecond(epoch).atZone(zone)
+        return "${formatter.format(dt)} (CET)"
     }
 }
