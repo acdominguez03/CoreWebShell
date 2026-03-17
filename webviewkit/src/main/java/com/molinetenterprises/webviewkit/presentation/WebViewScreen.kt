@@ -3,19 +3,25 @@ package com.molinetenterprises.webviewkit.presentation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
-import com.molinetenterprises.webviewkit.presentation.error_screen.ErrorScreen
+import com.molinetenterprises.webviewkit.presentation.error_screen.MaintenanceErrorScreen
 import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreen
-import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreenViewModel
-import com.molinetenterprises.webviewkit.presentation.maintenance_screen.WebViewMode
-import org.koin.core.parameter.parametersOf
+import com.molinetenterprises.webviewkit.presentation.version_screen.VersionScreen
+import com.molinetenterprises.webviewkit.presentation.webview_access.WebViewAccessViewModel
+import com.molinetenterprises.webviewkit.presentation.webview_access.WebViewMode
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun WebViewScreen(
     backgroundColor: Color,
     url: String,
     maintenanceUrl: String,
+    versionUrl: String,
+    appVersion: String,
     enableProgressBar: Boolean = true,
     backButtonEnabled: Boolean = false,
     donateButtonEnabled: Boolean = false,
@@ -24,13 +30,13 @@ fun WebViewScreen(
     navigateToAnotherView: () -> Unit = {}
 ) {
     val viewModel: WebViewScreenViewModel = koinViewModel()
-    val maintenanceScreenViewModel: MaintenanceScreenViewModel = koinViewModel(
+    val webViewAccessViewModel: WebViewAccessViewModel = koinViewModel(
        parameters = {
-           parametersOf(maintenanceUrl)
+           parametersOf(maintenanceUrl, versionUrl, appVersion, url)
        }
     )
 
-    val maintenanceState = maintenanceScreenViewModel.maintenanceState.collectAsState().value
+    val maintenanceState = webViewAccessViewModel.webViewAccessState.collectAsState().value
 
     when (maintenanceState.webViewMode) {
         WebViewMode.NORMAL -> {
@@ -53,10 +59,17 @@ fun WebViewScreen(
                 endEpoch = maintenanceState.endEpoch
             )
         }
+        WebViewMode.VERSION -> {
+            VersionScreen()
+        }
         WebViewMode.ERROR -> {
-            ErrorScreen(
-                message = maintenanceState.error ?: "Unknown error"
-            )
+            if (maintenanceState.statusCodeError == 408) {
+                ErrorPage(isWebView = false)
+            } else if (maintenanceState.statusCodeError >= 0) {
+                MaintenanceErrorScreen(
+                    statusCode = maintenanceState.statusCodeError
+                )
+            }
         }
     }
 

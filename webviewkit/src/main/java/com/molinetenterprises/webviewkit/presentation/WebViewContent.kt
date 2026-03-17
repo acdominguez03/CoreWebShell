@@ -59,6 +59,7 @@ import com.molinetenterprises.webviewkit.presentation.design_system.DonateButton
 import com.molinetenterprises.webviewkit.presentation.design_system.ErrorPage
 import com.molinetenterprises.webviewkit.presentation.design_system.FlatLinearProgressIndicator
 import com.molinetenterprises.webviewkit.presentation.design_system.rememberWebViewComponent
+import com.molinetenterprises.webviewkit.presentation.error_screen.MaintenanceErrorScreen
 
 @Composable
 fun WebViewContent(
@@ -175,7 +176,7 @@ fun WebViewContent(
             uiEvent(WebViewScreenViewModel.Event.OnConnectionLost)
         } else {
             if (!wasConnected) {
-                uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered(webView = webView))
+                uiEvent(WebViewScreenViewModel.Event.OnConnectionRecovered)
                 webView.reload()
             }
         }
@@ -212,32 +213,40 @@ fun WebViewContent(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .zIndex(-1f)
                     ) {
                         if (state.linearProgressIndicator < 1f && enableProgressBar) {
                             FlatLinearProgressIndicator(progress = state.linearProgressIndicator)
                         }
 
-                        if (state.hasError) {
+                        if (state.hasError && !state.showBanner) {
                             webView.visibility = View.INVISIBLE
 
-                            AndroidView(
-                                factory = { context ->
-                                    SwipeRefreshLayout(context).apply {
-                                        val composeView = ComposeView(context).apply {
-                                            setContent {
-                                                ErrorPage()
+                            if (state.statusCode == 408) {
+                                AndroidView(
+                                    factory = { context ->
+                                        SwipeRefreshLayout(context).apply {
+                                            val composeView = ComposeView(context).apply {
+                                                setContent {
+                                                    ErrorPage()
+                                                }
+                                            }
+                                            addView(composeView)
+
+                                            setOnRefreshListener {
+                                                uiEvent(
+                                                    WebViewScreenViewModel.Event.OnRefresh(
+                                                        webView = webView
+                                                    )
+                                                )
+                                                isRefreshing = false
                                             }
                                         }
-                                        addView(composeView)
-
-                                        setOnRefreshListener {
-                                            uiEvent(WebViewScreenViewModel.Event.OnRefresh(webView = webView))
-                                            isRefreshing = false
-                                        }
                                     }
-                                },
-                                modifier = Modifier.fillMaxSize().zIndex(9f)
-                            )
+                                )
+                            } else if (state.statusCode >= 0) {
+                                MaintenanceErrorScreen(state.statusCode)
+                            }
                         } else {
                             AndroidView(
                                 factory = { context ->

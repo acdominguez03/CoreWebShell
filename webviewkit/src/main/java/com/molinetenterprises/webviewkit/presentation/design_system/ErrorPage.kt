@@ -13,7 +13,7 @@ import com.molinetenterprises.webviewkit.R
 import com.molinetenterprises.webviewkit.theme.ErrorBackground
 
 @Composable
-fun ErrorPage() {
+fun ErrorPage(isWebView: Boolean = true) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -23,7 +23,7 @@ fun ErrorPage() {
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxSize(),
-            painter = painterResource(R.drawable.server_error_screen),
+            painter = painterResource(if (isWebView) R.drawable.server_error_screen else R.drawable.service_error_screen ),
             contentDescription = "404 Web Error"
         )
     }

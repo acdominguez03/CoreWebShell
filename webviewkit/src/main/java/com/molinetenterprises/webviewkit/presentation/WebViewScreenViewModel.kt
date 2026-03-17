@@ -26,6 +26,7 @@ class WebViewScreenViewModel(
         val isFirstTime: Boolean = true,
         val linearProgressIndicator: Float = 0f,
         val hasError: Boolean = false,
+        val statusCode: Int = 999,
         val isConnected: Boolean = true,
         val isFullScreen: Boolean = false,
         val showBanner : Boolean = false,
@@ -48,9 +49,8 @@ class WebViewScreenViewModel(
     private val _webViewState = MutableStateFlow(WebViewState())
     val webViewState: StateFlow<WebViewState> = _webViewState
 
-    // MEJORA 1: Rastrear errores solo del frame principal
-    private var mainFrameHadError: Boolean = false
-    private var currentLoadingUrl: String? = null
+    private var shouldRetryOnNextLoad = false
+    private var hadLoadError = false
 
     init {
         val request = NetworkRequest.Builder().build()
@@ -63,7 +63,6 @@ class WebViewScreenViewModel(
     }
 
     sealed class Event {
-        data object OnErrorReceived : Event()
         data class OnProgressChanged(val progress: Int): Event()
         data object OnPageStarted: Event()
         data class OnPageFinished(val url: String, val requestPermissions: () -> Unit): Event()
@@ -73,13 +72,13 @@ class WebViewScreenViewModel(
         data class GetInitialUrl(val defaultUrl: String, val callback: (String) -> Unit): Event()
         data object OnCheckCurrentConnectivity: Event()
         data class OnLaunchedEffect(val value: Boolean): Event()
-        data class OnConnectionRecovered(val webView: WebView): Event()
+        data object OnConnectionRecovered: Event()
         data object OnConnectionLost: Event()
+        data class OnErrorReceived(val statusCode: Int): Event()
     }
 
     fun handleEvent(event: Event) {
         when (event) {
-            is Event.OnErrorReceived -> onErrorReceived()
             is Event.OnProgressChanged -> onProgressChanged(progress = event.progress)
             is Event.OnPageStarted -> onPageStarted()
             is Event.OnPageFinished -> onPageFinished(url = event.url, requestPermissions = event.requestPermissions)
@@ -90,14 +89,30 @@ class WebViewScreenViewModel(
             is Event.OnCheckCurrentConnectivity -> checkCurrentConnectivity()
             is Event.OnLaunchedEffect -> onLaunchedEffect(value = event.value)
             is Event.OnConnectionLost -> onConnectionLost()
-            is Event.OnConnectionRecovered -> onConnectionRecovered(webView = event.webView)
+            is Event.OnConnectionRecovered -> onConnectionRecovered()
+            is Event.OnErrorReceived -> onErrorReceived(statusCode = event.statusCode)
         }
     }
 
-    fun onErrorReceived() {
-        // MEJORA 2: Solo marcar error si es del frame principal
-        mainFrameHadError = true
-        Log.e("WebViewViewModel", "Main frame error detected for URL: $currentLoadingUrl")
+    fun onErrorReceived(statusCode: Int) {
+        if (!_webViewState.value.isConnected) {
+            Log.d("WebViewViewModel", "Error received but no connection → ignore error screen")
+            hadLoadError = true
+            shouldRetryOnNextLoad = true
+            return
+        }
+
+        hadLoadError = true
+
+        shouldRetryOnNextLoad = statusCode != 408
+
+        _webViewState.tryEmit(
+            _webViewState.value.copy(
+                hasError = true,
+                statusCode = statusCode,
+                isWebViewLoaded = false
+            )
+        )
     }
 
     fun onProgressChanged(progress: Int) {
@@ -116,40 +131,44 @@ class WebViewScreenViewModel(
 
     fun onPageStarted() {
         viewModelScope.launch {
-            mainFrameHadError = false
-
             _webViewState.tryEmit(
                 _webViewState.value.copy(
                     isWebViewLoaded = false,
-                    hasError = false
+                    refreshing = false
                 )
             )
         }
     }
 
     fun onPageFinished(url: String, requestPermissions: () -> Unit) {
-        viewModelScope.launch {
-            currentLoadingUrl = url
-
-            // Guardar URL solo si es válida y no hubo error
-            if (url.isNotBlank() && url.startsWith("http") && !mainFrameHadError) {
-                dataStoreManager.saveUrl(url)
+        if (hadLoadError) {
+            if (_webViewState.value.isFirstTime) {
+                _webViewState.tryEmit(
+                    _webViewState.value.copy(
+                        isFirstTime = false
+                    )
+                )
             }
+            Log.d("WebViewViewModel", "Page finished but error occurred → ignore")
+            return
+        }
 
+        shouldRetryOnNextLoad = false
+
+        viewModelScope.launch {
             _webViewState.tryEmit(
                 _webViewState.value.copy(
+                    hasError = false,
                     isWebViewLoaded = true,
-                    isFirstTime = false,
-                    hasError = mainFrameHadError
+                    isFirstTime = false
                 )
             )
 
-            // Solo reiniciar después de actualizar el estado
-            if (!mainFrameHadError) {
-                requestPermissions()
-            }
+            dataStoreManager.saveUrl(url)
+            requestPermissions()
         }
     }
+
 
     private fun updateRefreshing() {
         viewModelScope.launch {
@@ -195,14 +214,12 @@ class WebViewScreenViewModel(
     }
 
     fun onRefresh(webView: WebView) {
-        viewModelScope.launch {
-            // Limpiar estado de error antes de recargar
-            mainFrameHadError = false
+        shouldRetryOnNextLoad = true
 
+        viewModelScope.launch {
             _webViewState.tryEmit(
                 _webViewState.value.copy(
-                    refreshing = true,
-                    hasError = false
+                    refreshing = true
                 )
             )
             webView.reload()
@@ -220,7 +237,9 @@ class WebViewScreenViewModel(
         }
     }
 
-    fun onConnectionRecovered(webView: WebView) {
+    fun onConnectionRecovered() {
+        if (!shouldRetryOnNextLoad) return
+
         viewModelScope.launch {
             _webViewState.tryEmit(
                 _webViewState.value.copy(

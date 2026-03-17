@@ -4,12 +4,13 @@ import android.app.Application
 import android.content.Context
 import com.molinetenterprises.webviewkit.data.DataStoreManager
 import com.molinetenterprises.webviewkit.presentation.WebViewScreenViewModel
-import com.molinetenterprises.webviewkit.presentation.maintenance_screen.MaintenanceScreenViewModel
+import com.molinetenterprises.webviewkit.presentation.webview_access.WebViewAccessViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+
 
 fun dataStoreModule(appContext: Context) = module {
 
@@ -20,8 +21,8 @@ fun dataStoreModule(appContext: Context) = module {
     single { appContext.applicationContext as Application }
 
     viewModel { WebViewScreenViewModel(dataStoreManager = get(), application = get()) }
-    viewModel {  (maintenanceUrl: String) ->
-        MaintenanceScreenViewModel(client = get(), maintenanceUrl = maintenanceUrl)
+    viewModel {  (maintenanceUrl: String, versionUrl: String, appVersion: String, serverUrl: String ) ->
+        WebViewAccessViewModel(client = get(), maintenanceUrl = maintenanceUrl, versionUrl = versionUrl, appVersion = appVersion, serverUrl = serverUrl)
     }
 
     single { providerKtorClient() }

@@ -31,6 +31,8 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.molinetenterprises.webviewkit.presentation.WebViewScreenViewModel
+import java.net.HttpURLConnection
+import java.net.URL
 
 
 @Composable
@@ -84,13 +86,55 @@ fun rememberWebViewComponent(
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-                    Log.d("WebView", "onPageFinished:")
+                    Log.d("WebView", "onPageStarted:")
                     uiEvent(WebViewScreenViewModel.Event.OnPageStarted)
+
+                    val userAgent = view?.settings?.userAgentString ?: "Mozilla/5.0"
+
+                    url?.let { pageUrl ->
+                        Thread {
+                            try {
+                                val urlConnection = URL(pageUrl).openConnection() as HttpURLConnection
+                                urlConnection.requestMethod = "HEAD"
+                                urlConnection.connectTimeout = 5000
+                                urlConnection.readTimeout = 5000
+                                urlConnection.instanceFollowRedirects = true
+                                urlConnection.setRequestProperty("User-Agent", userAgent) // Usar la variable local
+
+                                val statusCode = urlConnection.responseCode
+
+                                Log.d("WebView", "Status code $statusCode para: $pageUrl")
+
+                                if (statusCode in 400..599) {
+                                    Log.e("WebView", "Error HTTP $statusCode detectado")
+
+                                    view?.post {
+                                        uiEvent(
+                                            WebViewScreenViewModel.Event.OnErrorReceived(
+                                                statusCode = statusCode
+                                            )
+                                        )
+                                    }
+                                }
+
+                                urlConnection.disconnect()
+                            } catch (e: Exception) {
+                                view?.post {
+                                    uiEvent(
+                                        WebViewScreenViewModel.Event.OnErrorReceived(
+                                            statusCode = 408
+                                        )
+                                    )
+                                }
+                                Log.e("WebView", "Error verificando status: ${e.message}")
+                            }
+                        }.start()
+                    }
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    Log.d("WebView", "onPageFinished:")
+
                     view?.url?.let {
                         Log.d("WebView", "onPageFinished: $it")
                         CookieManager.getInstance().flush() 
@@ -105,9 +149,21 @@ fun rememberWebViewComponent(
                 ) {
                     super.onReceivedError(view, request, error)
 
-                    if (request?.isForMainFrame == true) {
-                        Log.e("WebView", "Main frame error: ${error?.description}")
-                        uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
+                    val requestUrl = request?.url.toString()
+
+                    // Mismo filtro aquí
+                    if (requestUrl.contains("favicon", ignoreCase = true)) {
+                        return
+                    }
+
+                    Log.e("WebView", "App error: ${error?.errorCode}")
+
+                    error?.errorCode?.let {
+                        uiEvent(
+                            WebViewScreenViewModel.Event.OnErrorReceived(
+                                statusCode = it
+                            )
+                        )
                     }
                 }
 
@@ -119,10 +175,21 @@ fun rememberWebViewComponent(
                     super.onReceivedHttpError(view, request, errorResponse)
 
                     val statusCode = errorResponse?.statusCode ?: return
+                    val requestUrl = request?.url.toString()
 
-                    if (statusCode == 403 || statusCode == 404) {
-                        Log.e("WebView", "HTTP $statusCode en frame principal")
-                        uiEvent(WebViewScreenViewModel.Event.OnErrorReceived)
+                    if (requestUrl.contains("favicon", ignoreCase = true)) {
+                        Log.d("WebView", "Ignorando favicon")
+                        return
+                    }
+
+                    if (statusCode in 400..599 && request?.isForMainFrame == true) {
+                        Log.e("WebView", "Error HTTP $statusCode en página principal: ${request.url}")
+
+                        uiEvent(
+                            WebViewScreenViewModel.Event.OnErrorReceived(
+                                statusCode = statusCode
+                            )
+                        )
                     }
                 }
             }
@@ -149,9 +216,6 @@ fun rememberWebViewComponent(
                         return
                     }
 
-                    customView = view
-                    isFullScreen = true
-
                     fullScreenContainer = FrameLayout(context).apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -172,9 +236,6 @@ fun rememberWebViewComponent(
                 override fun onHideCustomView() {
                     customView?.let {
                         (activity.window.decorView as ViewGroup).removeView(fullScreenContainer)
-                        customView = null
-                        fullScreenContainer = null
-                        isFullScreen = false
                     }
 
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT

@@ -51,7 +51,9 @@ fun MaintenanceScreen(
         Text(
             text = startText,
             color = Color.Black,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = MaterialTheme.typography.titleLarge.fontSize * 1.15f
+            )
         )
         Text(
             text = "and",
@@ -61,7 +63,9 @@ fun MaintenanceScreen(
         Text(
             text = endText,
             color = Color.Black,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = MaterialTheme.typography.titleLarge.fontSize * 1.15f
+            )
         )
     }
 }

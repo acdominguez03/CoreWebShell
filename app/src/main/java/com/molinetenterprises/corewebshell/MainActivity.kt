@@ -25,6 +25,8 @@ class MainActivity : ComponentActivity() {
                             backgroundColor = Color(0xFF2B2C31),
                             url = "https://foro.global/",
                             maintenanceUrl = "https://foro.global/maintenance_window",
+                            versionUrl = "https://foro.global/app_version",
+                            appVersion = "1.2",
                             enableProgressBar = true,
                             progressIndicatorColor = Color.White
                         )
